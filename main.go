@@ -28,7 +28,7 @@ var queueSize int
 func main() {
 	flag.IntVar(&poolSize, "pool-size", defaulPoolSize, "Worker pool size")
 	flag.IntVar(&queueSize, "queue-size", defaultQueueSize, "Executor task queue size")
-    flag.Parse()
+	flag.Parse()
 
 	logger, _ := zap.NewDevelopment()
 
@@ -58,8 +58,8 @@ type handler struct {
 }
 
 type task struct {
-	Name     string `json:"name"`
-	Duration int    `json:"duration"`
+	Name     string        `json:"name"`
+	Duration time.Duration `json:"duration"`
 }
 
 func (h *handler) SubmitTasks(w http.ResponseWriter, r *http.Request) {
@@ -86,7 +86,7 @@ func (h *handler) SubmitTasks(w http.ResponseWriter, r *http.Request) {
 	for _, t := range tasks {
 		h.Executor.Submit(&executor.Task{
 			Name:     t.Name,
-			Duration: time.Duration(t.Duration) * time.Millisecond,
+			Duration: t.Duration * time.Millisecond,
 		})
 	}
 
@@ -99,7 +99,7 @@ func (h *handler) GetRunningTasks(w http.ResponseWriter, r *http.Request) {
 	for _, v := range h.Executor.GetRunningTasks() {
 		tasks = append(tasks, &task{
 			Name:     v.Name,
-			Duration: int(v.Duration),
+			Duration: v.Duration * time.Millisecond,
 		})
 	}
 
@@ -111,7 +111,7 @@ func (h *handler) GetPendingTasks(w http.ResponseWriter, r *http.Request) {
 	for _, v := range h.Executor.GetPendingTasks() {
 		tasks = append(tasks, &task{
 			Name:     v.Name,
-			Duration: int(v.Duration),
+			Duration: v.Duration * time.Millisecond,
 		})
 	}
 

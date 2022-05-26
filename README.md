@@ -1,7 +1,16 @@
 # Pexecutor - Simple Toy Task Executor
 
+Pexecutor is a simple web task executor. It allows you to submit tasks that will be executed by the first available worker.
+
+
 
 ## Run
+
+Requirements: go 1.17 available
+
+
+
+
 
 ```
 curl -X POST localhost:8080/tasks \
@@ -15,8 +24,7 @@ curl -X POST localhost:8080/tasks \
     {"name": "Task 7","duration":8000},
     {"name": "Task 8","duration":3330},
     {"name": "Task 9","duration":2200},
-    {"name": "Task 10","duration":4000},
-    {"name": "Task 11","duration":5100}]'
+    {"name": "Task 10","duration":5100}]'
 
 ```
 
@@ -27,3 +35,8 @@ curl localhost:8080/tasks/running | jq .
 ```
 curl localhost:8080/tasks/pending | jq .
 ```
+
+## Known Issues
+
+This is the list of know issues:
+- Lack of tests

@@ -44,11 +44,11 @@ func New(poolSize int, queueSize int, log *zap.Logger) *E {
 		poolSize:   poolSize,
 		tasks:      make(map[string]*Task),
 		taskQueue:  make(chan *Task, queueSize),
-        log: log,
+		log:        log,
 	}
 }
 
-// Run starts up the exector
+// Run starts up the exector. Call Close to stop it.
 func (e *E) Run() {
 	for i := 0; i < e.poolSize; i++ {
 		go func(id int) {
@@ -69,7 +69,7 @@ func (e *E) Submit(t *Task) bool {
 	defer e.tmu.Unlock()
 
 	if _, ok := e.tasks[t.Name]; ok {
-		e.log.Sugar().Debugf("Duplicate task: %v", t)
+		e.log.Debug("Duplicate task", zap.Any("task", t))
 		return false
 	}
 
@@ -77,7 +77,7 @@ func (e *E) Submit(t *Task) bool {
 
 	e.taskQueue <- t
 
-	e.log.Sugar().Debugf("Submitied task: %v", t)
+	e.log.Debug("Submitied task", zap.Any("task", t))
 	return true
 }
 
@@ -113,7 +113,7 @@ func (e *E) GetPendingTasks() []*Task {
 
 // Close stops the executor
 func (e *E) Close() {
-	e.log.Sugar().Info("Closing the exeutor...")
+	e.log.Info("Closing the exeutor...")
 	e.terminated <- true
 }
 
@@ -126,7 +126,7 @@ func (e *E) worker(id int) {
 		t.running = true
 		t.rmu.Unlock()
 
-		e.log.Sugar().Debugf("Worker %d - Executing task: %v", id, t)
+		e.log.Sugar().Debugf("Worker %d - Executing task: %s: %d", id, t.Name, t.Duration)
 
 		// processing the tasks
 		time.Sleep(t.Duration)
