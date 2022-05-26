@@ -59,7 +59,7 @@ curl localhost:8080/tasks/running | jq .
   {
     "name": "Task 7",
     "duration": 8000
-  },
+  }
 ]
 
 ```
