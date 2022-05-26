@@ -5,11 +5,11 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"time"
 
 	"github.com/gorilla/mux"
+	"go.uber.org/zap"
 
 	"github.com/inelpandzic/pexecutor/executor"
 )
@@ -30,25 +30,31 @@ func main() {
 	flag.IntVar(&queueSize, "queue-size", defaultQueueSize, "Executor task queue size")
     flag.Parse()
 
-	ex := executor.New(poolSize, queueSize)
+	logger, _ := zap.NewDevelopment()
+
+	ex := executor.New(poolSize, queueSize, logger)
 	go func() {
 		ex.Run()
 	}()
 	defer ex.Close()
 
-	handler := &handler{Executor: ex}
+	handler := &handler{Executor: ex, Log: logger}
 
 	router := mux.NewRouter()
 	router.Methods("POST").Path("/tasks").HandlerFunc(handler.SubmitTasks)
 	router.Methods("GET").Path("/tasks/running").HandlerFunc(handler.GetRunningTasks)
 	router.Methods("GET").Path("/tasks/pending").HandlerFunc(handler.GetPendingTasks)
 
-	log.Printf("Server started, listening at port: %d\n", port)
-	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), router))
+	logger.Sugar().Infof("Server started, listening at port: %d", port)
+
+	if err := http.ListenAndServe(fmt.Sprintf(":%d", port), router); err != nil {
+		logger.Sugar().Fatal("Server failed", err)
+	}
 }
 
 type handler struct {
 	Executor *executor.E
+	Log      *zap.Logger
 }
 
 type task struct {
@@ -84,40 +90,38 @@ func (h *handler) SubmitTasks(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-
-    // TODO: return {"submittedTasks: 23, dublicateTasks: 10"}
+	// TODO: return {"submittedTasks: 23, dublicateTasks: 10"}
 	w.WriteHeader(http.StatusOK)
 }
 
 func (h *handler) GetRunningTasks(w http.ResponseWriter, r *http.Request) {
-    var tasks []*task
-    for _, v := range h.Executor.GetRunningTasks()  {
-        tasks = append(tasks, &task{
-            Name: v.Name,
-            Duration: int(v.Duration),
-        })
-    }
+	var tasks []*task
+	for _, v := range h.Executor.GetRunningTasks() {
+		tasks = append(tasks, &task{
+			Name:     v.Name,
+			Duration: int(v.Duration),
+		})
+	}
 
-    writeResponse(w, tasks)
+	h.writeResponse(w, tasks)
 }
 
 func (h *handler) GetPendingTasks(w http.ResponseWriter, r *http.Request) {
-    var tasks []*task
-    for _, v := range h.Executor.GetPendingTasks()  {
-        tasks = append(tasks, &task{
-            Name: v.Name,
-            Duration: int(v.Duration),
-        })
-    }
+	var tasks []*task
+	for _, v := range h.Executor.GetPendingTasks() {
+		tasks = append(tasks, &task{
+			Name:     v.Name,
+			Duration: int(v.Duration),
+		})
+	}
 
-    writeResponse(w, tasks)
+	h.writeResponse(w, tasks)
 }
 
-
-func writeResponse(w http.ResponseWriter, payload interface{}) {
+func (h *handler) writeResponse(w http.ResponseWriter, payload interface{}) {
 	w.Header().Set("content-type", "application/json")
 	if err := json.NewEncoder(w).Encode(payload); err != nil {
-		log.Printf("Failed writting response: %v", payload)
+		h.Log.Sugar().Errorf("Failed writting response: %v", payload)
 		http.Error(w, "Failed writing response", http.StatusInternalServerError)
 	}
 }

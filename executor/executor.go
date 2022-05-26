@@ -1,9 +1,10 @@
 package executor
 
 import (
-	"log"
 	"sync"
 	"time"
+
+	"go.uber.org/zap"
 )
 
 // E represents the executor that will accept tasks and run them on the
@@ -17,6 +18,8 @@ type E struct {
 
 	tmu   sync.Mutex
 	tasks map[string]*Task
+
+	log *zap.Logger
 }
 
 // Task represents a single unit of work executed by the Executor
@@ -34,13 +37,14 @@ type Task struct {
 // poolSize is the number of workers executing tasks
 // queueSize is the number of tasks that can be queued up
 // waiting to be executed. If the queue is full, Submit will block.
-func New(poolSize int, queueSize int) *E {
+func New(poolSize int, queueSize int, log *zap.Logger) *E {
 	return &E{
 		terminated: make(chan bool),
 		queueSize:  queueSize,
 		poolSize:   poolSize,
 		tasks:      make(map[string]*Task),
 		taskQueue:  make(chan *Task, queueSize),
+        log: log,
 	}
 }
 
@@ -52,7 +56,7 @@ func (e *E) Run() {
 		}(i)
 	}
 
-	log.Printf("Executor started: workers: %d, queue capacity: %d", e.poolSize, e.queueSize)
+	e.log.Sugar().Infof("Executor started: workers: %d, queue capacity: %d", e.poolSize, e.queueSize)
 	<-e.terminated
 }
 
@@ -65,7 +69,7 @@ func (e *E) Submit(t *Task) bool {
 	defer e.tmu.Unlock()
 
 	if _, ok := e.tasks[t.Name]; ok {
-		log.Printf("Duplicate task: %v", t)
+		e.log.Sugar().Debugf("Duplicate task: %v", t)
 		return false
 	}
 
@@ -73,7 +77,7 @@ func (e *E) Submit(t *Task) bool {
 
 	e.taskQueue <- t
 
-	log.Printf("Submitied task: %v", t)
+	e.log.Sugar().Debugf("Submitied task: %v", t)
 	return true
 }
 
@@ -107,8 +111,9 @@ func (e *E) GetPendingTasks() []*Task {
 	return r
 }
 
-// Shutdowns stops the executor
+// Close stops the executor
 func (e *E) Close() {
+	e.log.Sugar().Info("Closing the exeutor...")
 	e.terminated <- true
 }
 
@@ -121,7 +126,7 @@ func (e *E) worker(id int) {
 		t.running = true
 		t.rmu.Unlock()
 
-		log.Printf("Worker %d - Executing task: %v\n", id, t)
+		e.log.Sugar().Debugf("Worker %d - Executing task: %v", id, t)
 
 		// processing the tasks
 		time.Sleep(t.Duration)
