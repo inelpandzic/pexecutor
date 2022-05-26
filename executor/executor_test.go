@@ -3,7 +3,7 @@ package executor
 import (
 	"fmt"
 	"testing"
-    "time"
+	"time"
 
 	"go.uber.org/zap"
 )
@@ -17,16 +17,15 @@ func TestExecutor(t *testing.T) {
 	// check that 0 are running 0 are pending
 
 	log, _ := zap.NewDevelopment()
-    poolSize := 5
+	poolSize := 5
 	ex := New(poolSize, 100, log)
-    go ex.Run()
+	go ex.Run()
 	defer ex.Close()
 
+	// Ensure that the executor is up and runningn
+	time.Sleep(100 * time.Millisecond)
 
-    // Ensure that the executor is up and runningn
-    time.Sleep(100 * time.Millisecond)
-
-    const totalTasks = 10
+	const totalTasks = 10
 
 	for i := 0; i < totalTasks; i++ {
 		t := &Task{
@@ -36,30 +35,29 @@ func TestExecutor(t *testing.T) {
 		ex.Submit(t)
 	}
 
-    // Ensure that tasks are submitted
-    time.Sleep(100 * time.Millisecond)
+	// Ensure that tasks are submitted
+	time.Sleep(100 * time.Millisecond)
 
-    runningTasks := len(ex.GetRunningTasks())
-    if runningTasks != poolSize {
-        t.Fatalf("Number of running tasks should be %d, but got %d", poolSize,runningTasks)
-    }
+	runningTasks := len(ex.GetRunningTasks())
+	if runningTasks != poolSize {
+		t.Fatalf("Number of running tasks should be %d, but got %d", poolSize, runningTasks)
+	}
 
-    pendingTasks := len(ex.GetPendingTasks())
-    if pendingTasks != totalTasks - poolSize {
-        t.Fatalf("Number of pending tasks should be %d, but got %d", totalTasks - poolSize, pendingTasks)
-    }
+	pendingTasks := len(ex.GetPendingTasks())
+	if pendingTasks != totalTasks-poolSize {
+		t.Fatalf("Number of pending tasks should be %d, but got %d", totalTasks-poolSize, pendingTasks)
+	}
 
+	// Ensure that all tasks are executed
+	time.Sleep(6 * time.Second)
 
-    // Ensure that all tasks are executed
-    time.Sleep(6 * time.Second)
+	runningTasks = len(ex.GetRunningTasks())
+	if runningTasks != 0 {
+		t.Fatalf("Number of running tasks should be %d, but got %d", 0, runningTasks)
+	}
 
-    runningTasks = len(ex.GetRunningTasks())
-    if runningTasks != 0 {
-        t.Fatalf("Number of running tasks should be %d, but got %d", 0, runningTasks)
-    }
-
-    pendingTasks = len(ex.GetPendingTasks())
-    if pendingTasks != 0 {
-        t.Fatalf("Number of pending tasks should be %d, but got %d", 0, pendingTasks)
-    }
+	pendingTasks = len(ex.GetPendingTasks())
+	if pendingTasks != 0 {
+		t.Fatalf("Number of pending tasks should be %d, but got %d", 0, pendingTasks)
+	}
 }
