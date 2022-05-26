@@ -1,6 +1,6 @@
 # Pexecutor - Simple Task Executor
 
-Pexecutor is a simple web task executor. It allows you to submit tasks that will be executed by the first available worker.
+Pexecutor is a simple web task executor. It allows you to submit tasks that will be executed by the first available worker. Task that are already running or are waiting to be executed will be rejected as duplicates.
 
 ## Run
 
@@ -13,6 +13,7 @@ go run main.go -pool-size 5 - queue-size 1000 -port 8080
 This will startup a service with the executor of 5 workers and task queue capacity of 1000.
 
 
+## Usage
 
 Submit couple of tasks:
 
@@ -81,8 +82,10 @@ curl localhost:8080/tasks/pending | jq .
 
 ## Things to Improve
 
-This is the list of known things that can be improved
-- Lack of tests (or no tests to be more precise).
+This is the list of known things that can be improved:
+- Better and more tests.
 - If the task queue is exhausted, submitting a task will be blocked and with the all workers busy with long running tasks, the system can halt. The end user should not wait necessarily for this operation.
 - Workers should be gracefully shutdown.
+- Using a concurrent map like [orcaman/concurrent-map](https://github.com/orcaman/concurrent-map) for the backing map will be more efficient because it is sharded and only the shard to which the key belongs iis locked, rather than the whole map like it is done now.
+- It would be nicer if it is packaged in a Docker container
 
