@@ -6,9 +6,7 @@ Pexecutor is a simple web task executor. It allows you to submit tasks that will
 
 ## Run
 
-Requirements: go 1.17 available
-
-
+Requirements: `go 1.17` available
 
 
 

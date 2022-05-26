@@ -83,15 +83,31 @@ func (h *handler) SubmitTasks(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	submittedTasks := 0
+	dublicateTasks := 0
 	for _, t := range tasks {
-		h.Executor.Submit(&executor.Task{
+		submitted := h.Executor.Submit(&executor.Task{
 			Name:     t.Name,
 			Duration: t.Duration * time.Millisecond,
 		})
+
+		if submitted {
+			submittedTasks++
+		} else {
+			dublicateTasks++
+		}
 	}
 
-	// TODO: return {"submittedTasks: 23, dublicateTasks: 10"}
-	w.WriteHeader(http.StatusOK)
+	res := &struct {
+		RequestedTask  int
+		SubmittedTasks int
+		DuplicateTasks int
+	}{
+		RequestedTask:  len(tasks),
+		SubmittedTasks: submittedTasks,
+		DuplicateTasks: dublicateTasks,
+	}
+	h.writeResponse(w, res)
 }
 
 func (h *handler) GetRunningTasks(w http.ResponseWriter, r *http.Request) {
