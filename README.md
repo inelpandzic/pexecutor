@@ -8,7 +8,7 @@ Requirements: `go 1.17` available
 
 Run the service:
 ```
-go run main.go -pool-size 5 - queue-size 1000
+go run main.go -pool-size 5 - queue-size 1000 -port 8080
 ```
 This will startup a service with the executor of 5 workers and task queue capacity of 1000.
 

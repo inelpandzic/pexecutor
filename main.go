@@ -15,25 +15,27 @@ import (
 )
 
 const (
-	port            = 8080
 	jsonContentType = "application/json"
 
-	defaulPoolSize   = 10
+	defaultPort      = 8080
+	defaulPoolSize   = 5
 	defaultQueueSize = 1000
 )
 
 var poolSize int
 var queueSize int
+var port int
 
 func main() {
 	flag.IntVar(&poolSize, "pool-size", defaulPoolSize, "Worker pool size")
 	flag.IntVar(&queueSize, "queue-size", defaultQueueSize, "Executor task queue size")
+	flag.IntVar(&port, "port", port, "Port number")
 	flag.Parse()
 
 	logger, _ := zap.NewDevelopment()
 
 	ex := executor.New(poolSize, queueSize, logger)
-    go ex.Run()
+	go ex.Run()
 	defer ex.Close()
 
 	handler := &handler{Executor: ex, Log: logger}
