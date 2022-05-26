@@ -33,9 +33,7 @@ func main() {
 	logger, _ := zap.NewDevelopment()
 
 	ex := executor.New(poolSize, queueSize, logger)
-	go func() {
-		ex.Run()
-	}()
+    go ex.Run()
 	defer ex.Close()
 
 	handler := &handler{Executor: ex, Log: logger}
@@ -115,7 +113,7 @@ func (h *handler) GetRunningTasks(w http.ResponseWriter, r *http.Request) {
 	for _, v := range h.Executor.GetRunningTasks() {
 		tasks = append(tasks, &task{
 			Name:     v.Name,
-			Duration: v.Duration * time.Millisecond,
+			Duration: v.Duration / time.Millisecond,
 		})
 	}
 
@@ -127,7 +125,7 @@ func (h *handler) GetPendingTasks(w http.ResponseWriter, r *http.Request) {
 	for _, v := range h.Executor.GetPendingTasks() {
 		tasks = append(tasks, &task{
 			Name:     v.Name,
-			Duration: v.Duration * time.Millisecond,
+			Duration: v.Duration / time.Millisecond,
 		})
 	}
 

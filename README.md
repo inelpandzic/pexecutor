@@ -1,14 +1,20 @@
-# Pexecutor - Simple Toy Task Executor
+# Pexecutor - Simple Task Executor
 
 Pexecutor is a simple web task executor. It allows you to submit tasks that will be executed by the first available worker.
-
-
 
 ## Run
 
 Requirements: `go 1.17` available
 
+Run the service:
+```
+go run main.go -pool-size 5 - queue-size 1000
+```
+This will startup a service with the executor of 5 workers and task queue capacity of 1000.
 
+
+
+Submit couple of tasks:
 
 ```
 curl -X POST localhost:8080/tasks \
@@ -26,15 +32,57 @@ curl -X POST localhost:8080/tasks \
 
 ```
 
+And the response can be something like:
+```
+{
+  "RequestedTask": 10,
+  "SubmittedTasks": 7,
+  "DuplicateTasks": 3 
+}
+```
+This means that 3 tasks are rejected(duplicate) because they are executing or waiting to be executed.
+
+
+Get the running tasks:
 ```
 curl localhost:8080/tasks/running | jq .
+[
+  {
+    "name": "Task 6",
+    "duration": 2200
+  },
+  {
+    "name": "Task 10",
+    "duration": 4000
+  },
+  {
+    "name": "Task 7",
+    "duration": 8000
+  },
+]
+
 ```
 
+
+Or get the pending tasks like:
 ```
 curl localhost:8080/tasks/pending | jq .
+[
+  {
+    "name": "Task 8",
+    "duration": 3330
+  },
+  {
+    "name": "Task 9",
+    "duration": 2200
+  }
+]
 ```
 
-## Known Issues
+## Things to Improve
 
-This is the list of know issues:
-- Lack of tests
+This is the list of known things that can be improved
+- Lack of tests (or no tests to be more precise).
+- If the task queue is exhausted, submitting a task will be blocked and with the all workers busy with long running tasks, the system can halt. The end user should not wait necessarily for this operation.
+- Workers should be gracefully shutdown.
+
